@@ -4,6 +4,7 @@
 // @version      1.0 alpha
 // @description  Add download button to save Claude AI conversations in TXT, MD, or JSON format
 // @author       Papa Casper
+// @license      MIT
 // @homepage     https://papacasper.com
 // @repository   https://github.com/PapaCasper
 // @source       https://github.com/PapaCasper/claude-downloader
