@@ -1,38 +1,36 @@
 # Claude Chat Downloader
 
-A userscript that adds an Export button to Claude.ai, allowing you to download your conversations in multiple formats.
+A userscript that adds a dark-themed dropdown to Claude.ai’s chat input, allowing you to choose between TXT, MD, or JSON formats and download your conversations with a single click. The dropdown intelligently flips up if there's not enough space below the input field.
 
 ## Features
 
-- 📥 Adds export buttons directly under Chat Controls section
-- 💾 Download conversations in TXT, MD, or JSON formats
-- 🎨 Seamlessly integrates with Claude's UI design
-- 🌓 Supports both light and dark modes
-- 📱 Works on desktop and mobile views
-- 🔍 Preserves code blocks and formatting
-- ✨ Interactive hover states with tooltips
-- 🎯 Single-click export for each format
+- 🌓 **Dark Mode Integration**: Seamlessly matches Claude’s dark-themed chat input.
+- 🔄 **Flippable Dropdown**: Dropdown menu opens upward when there's insufficient room below.
+- 📋 **Multiple Output Formats**: Download conversations in **TXT**, **MD**, or **JSON**.
+- 📥 **In-Chat Control**: Dropdown and download icon embedded directly in the chat input box.
+- ⚡ **Single-Click Export**: Select format and click the icon to instantly download.
+- 📱 **Responsive**: Works on desktop and mobile views.
+- 🛠 **Auto-Update**: Script can update itself from GitHub releases.
 
 ## Installation
 
-1. Install [Tampermonkey](https://www.tampermonkey.net/) for your browser
-2. Click the "Install" button above
-3. Approve the installation in Tampermonkey
+1. Install [Tampermonkey](https://www.tampermonkey.net/) (or a compatible userscript manager).
+2. Click **Install** or copy-paste the script source URL:
+   ```
+   https://raw.githubusercontent.com/PapaCasper/claude-downloader/main/claude-downloader.user.js
+   ```
+3. Approve installation in Tampermonkey.
 
 ## Usage
 
-1. Go to [Claude.ai](https://claude.ai)
-2. Open any conversation
-3. Find the format buttons under "Chat controls":
-   - TXT: Simple text format with clear speaker labels
-   - MD: Markdown format with headers and formatting preserved
-   - JSON: Complete conversation data in JSON format
-4. Hover over any button to see format description
-5. Click to download in your preferred format
+1. Visit [Claude.ai](https://claude.ai) and open any conversation.
+2. Inside the chat input box, locate the **format dropdown** (defaults to `TXT`).
+3. Click the dropdown to pick **TXT**, **MD**, or **JSON**. The menu will flip upward if needed.
+4. Click the 📥 **download icon** to save your conversation in the chosen format.
 
 ## Export Format Examples
 
-### TXT Format
+### TXT
 ```txt
 User:
 Hello Claude!
@@ -41,58 +39,58 @@ Claude:
 Hello! How can I help you today?
 ```
 
-### MD Format
+### MD
 ```markdown
 # Claude Chat Export
 
-*Exported on [timestamp]*
+*Exported on 2025-04-23 14:32:10*
+
+---
 
 ### User
+
 Hello Claude!
 
 ---
 
 ### Claude
+
 Hello! How can I help you today?
 
 ---
 ```
 
-### JSON Format
+### JSON
 ```json
 {
   "chat_messages": [
-    {
-      "sender": "human",
-      "text": "Hello Claude!"
-    },
-    {
-      "sender": "assistant",
-      "text": "Hello! How can I help you today?"
-    }
+    { "sender": "human", "text": "Hello Claude!" },
+    { "sender": "assistant", "text": "Hello! How can I help you today?" }
   ]
 }
 ```
 
+## Update & Maintenance
+
+- The script auto-updates from the GitHub repository when a new release is published.
+- Report bugs or request features on [GitHub Issues](https://github.com/PapaCasper/claude-downloader/issues).
+
 ## Support
 
-- 🐛 Report issues: [GitHub Issues](https://github.com/PapaCasper/claude-downloader/issues)
-- 💻 Source code: [GitHub Repository](https://github.com/PapaCasper/claude-downloader)
-- 🌐 Author website: [papacasper.com](https://papacasper.com)
+- 📂 **Source code**: https://github.com/PapaCasper/claude-downloader
+- 🌐 **Author**: https://papacasper.com
 
 ## Changelog
 
-### v2.0 alpha (Current)
-- Redesigned UI to integrate with Chat Controls
-- Added individual format buttons in a row layout
-- Added interactive hover effects and tooltips
-- Improved button placement and styling
-- Enhanced visual feedback
-- Streamlined export process
-- Fixed mobile view compatibility
+### v2.1
+- Added GitHub auto-update (updateURL/downloadURL).
+- Fixed dropdown positioning and flipping logic.
+- Updated UI styling for better theme match.
 
-### v1.0 alpha
-- Initial public release
-- Added support for multiple export formats (TXT, MD, JSON)
-- Added mobile view support
-- Improved dark/light mode handling
+### v2.0
+- Switched to custom dark dropdown in chat input.
+- Introduced flippable menu that opens up when needed.
+- Simplified download workflow to a single embedded control.
+
+### v1.0
+- Initial release: added separate export buttons for TXT, MD, JSON.
