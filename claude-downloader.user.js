@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Claude Chat Downloader (flippable dark dropdown)
+// @name         Claude Chat Downloader (native button style)
 // @namespace    http://tampermonkey.net/
-// @version      2.1.1
-// @description  Choose TXT/MD/JSON from a dark dropdown that flips up if needed, then click to download Claude conversations.
+// @version      2.2.1
+// @description  Download Claude conversations with native button styling that matches the plus/settings buttons
 // @author       Papa Casper
 // @homepage     https://papacasper.com
 // @homepageURL  https://github.com/papacasper/claude-downloader
@@ -19,71 +19,130 @@
 // @license      MIT
 // ==/UserScript==
 
-
 (function() {
   'use strict';
 
   const API_BASE = 'https://claude.ai/api';
   const IS_EDGE = /Edg/.test(navigator.userAgent);
 
-  // 1) Inject CSS for our custom dark, flippable dropdown
+  // 1) Inject CSS matching Claude's exact native dropdown style
   const ddStyles = document.createElement('style');
   ddStyles.textContent = `
-    .claude-format-dropdown {
+    .claude-download-dropdown {
+      width: 20rem;
       position: absolute;
-      top: 0.5rem;
-      right: 2.75rem;
-      background: var(--bg-000, #1c1c1e);
-      color: var(--text-100, #e5e5e7);
-      border: 1px solid var(--border-300, #3f3f44);
-      border-radius: 0.375rem;
-      font-size: 0.875rem;
-      z-index: 20;
-      user-select: none;
+      max-width: calc(100vw - 16px);
+      bottom: 2.5rem;
+      left: 0px;
+      display: none;
+      z-index: 50;
     }
-    .claude-format-dropdown > .selected {
-      padding: 0.25rem 0.5rem;
+
+    .claude-download-dropdown.show {
+      display: block;
+    }
+
+    .claude-download-dropdown .dropdown-inner {
+      position: relative;
+      width: 100%;
+      will-change: transform;
+      height: auto;
+      overflow-y: auto;
+      overscroll-behavior: auto;
+      display: flex;
+      z-index: 50;
+      background: #30302e;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      border: 0.5px solid var(--border-300, #3f3f44);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      flex-direction: column-reverse;
+      opacity: 1;
+      transform: none;
+    }
+
+    .claude-download-dropdown .dropdown-content {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      width: 100%;
+      transition-timing-function: ease-in-out;
+      transition-duration: 100ms;
+      transition-property: height;
+      transition-delay: 0ms;
+      justify-content: flex-end;
+      background: #30302e;
+    }
+
+    .claude-download-dropdown .p-1\\.5 {
+      padding: 0.375rem;
+    }
+
+    .claude-download-dropdown .flex.flex-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .claude-download-option {
+      display: flex;
+      width: 100%;
+      text-align: left;
+      gap: 0.625rem;
+      padding: 0.375rem;
+      font-weight: 400;
+      color: var(--text-200, #e5e5e7);
+      border-radius: 0.5rem;
+      user-select: none;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      height: 2rem;
+      background: transparent;
+    }
+
+    .claude-download-option:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-000, #ffffff);
+    }
+
+    .claude-download-option:active {
+      transform: scale(0.995);
+    }
+
+    .claude-download-option .option-icon {
+      min-width: 1rem;
+      min-height: 1rem;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
+      justify-content: center;
+      color: var(--text-300, #c7c7c9);
+      flex-shrink: 0;
     }
-    .claude-format-dropdown > .options {
-      position: absolute;
-      top: calc(100% + 0.125rem);
-      left: 0;
-      display: none;
-      flex-direction: column;
-      background: var(--bg-000, #1c1c1e);
-      color: var(--text-100, #e5e5e7);
-      border: 1px solid var(--border-300, #3f3f44);
-      border-radius: 0.375rem;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+
+    .claude-download-option:hover .option-icon {
+      color: var(--text-100, #f2f2f7);
+    }
+
+    .claude-download-option .option-text {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      flex: 1;
+      min-width: 7rem;
+    }
+
+    .claude-download-option .option-label {
+      font-weight: 400;
+      color: var(--text-300, #c7c7c9);
+      text-overflow: ellipsis;
+      word-break: break-words;
+      white-space: nowrap;
+      min-width: 0;
       overflow: hidden;
     }
-    .claude-format-dropdown.open > .options {
-      display: flex;
-    }
-    .claude-format-dropdown.open.up > .options {
-      top: auto;
-      bottom: calc(100% + 0.125rem);
-    }
-    .claude-format-dropdown .options > div {
-      padding: 0.5rem;
-      cursor: pointer;
-      background: hsl(var(--bg-100)/var(--tw-bg-opacity));;
-    }
-    .claude-format-dropdown .options > div:hover {
-      background: hsl(var(--bg-200)/var(--tw-bg-opacity));;
-    }
-    .claude-format-dropdown svg {
-      width: 1rem;
-      height: 1rem;
-      flex-shrink: 0;
-      transition: transform 0.2s ease;
-    }
-    .claude-format-dropdown.open > .selected svg {
-      transform: rotate(-90deg);
+
+    .claude-download-option:hover .option-label {
+      color: var(--text-100, #f2f2f7);
     }
   `;
   document.head.appendChild(ddStyles);
@@ -128,9 +187,7 @@
       return orgs[0].uuid;
     } catch (e) {
       console.error("Failed to get organization ID:", e);
-      // Fallback: try to extract from page URL or localStorage
       try {
-        // Check localStorage
         const localStorageData = JSON.parse(localStorage.getItem('claude-auth'));
         if (localStorageData && localStorageData.organizations && localStorageData.organizations.length > 0) {
           return localStorageData.organizations[0].uuid;
@@ -193,87 +250,207 @@
     }
   }
 
-  // 3) Inject custom dropdown + flip logic
-  function injectDropdown() {
-    if (document.querySelector('.claude-format-dropdown')) return;
-
-    // Use multiple selectors to be more browser-compatible
-    const fieldsetSelectors = [
-      'fieldset.flex.w-full.min-w-0.flex-col',
-      'fieldset.w-full.flex.min-w-0.flex-col',
-      'fieldset.flex-col.w-full.min-w-0',
-      'fieldset[class*="flex"][class*="w-full"][class*="min-w-0"][class*="flex-col"]'
-    ];
-
-    let fs = null;
-    for (const selector of fieldsetSelectors) {
-      fs = document.querySelector(selector);
-      if (fs) break;
+  // 3) Find the button container and inject native-styled button
+  function injectDownloadButton() {
+    if (document.querySelector('.claude-download-btn')) {
+      console.log("Claude Downloader: Button already exists");
+      return;
     }
 
-    if (!fs) {
-      if (IS_EDGE) {
-        // For Edge: try a more generic approach
-        fs = document.querySelector('form fieldset');
+    console.log("Claude Downloader: Attempting to inject button...");
+
+    // Look for the exact container structure from the provided HTML
+    let buttonContainer = document.querySelector('div.relative.flex-1.flex.items-center.gap-2.shrink.min-w-0');
+
+    if (!buttonContainer) {
+      console.log("Claude Downloader: Main container not found, trying fallbacks...");
+      // Fallback selectors
+      const fallbackSelectors = [
+        'div.flex.items-center.gap-2',
+        'div[class*="flex"][class*="items-center"][class*="gap-2"]',
+        'div.relative.flex-1.flex',
+        'div:has(button[data-testid="input-menu-plus"])'
+      ];
+
+      for (const selector of fallbackSelectors) {
+        buttonContainer = document.querySelector(selector);
+        if (buttonContainer) {
+          console.log(`Claude Downloader: Found fallback container: ${selector}`);
+          break;
+        }
       }
-      if (!fs) return; // Still not found
+
+      if (!buttonContainer) {
+        console.log("Claude Downloader: No suitable container found");
+        return;
+      }
     }
 
-    fs.style.position = 'relative';
+    // Create button wrapper that matches Claude's structure
+    const btnWrapper = document.createElement('div');
+    btnWrapper.className = 'relative shrink-0';
 
-    const dd = document.createElement('div');
-    dd.className = 'claude-format-dropdown';
-    dd.innerHTML = `
-      <div class="selected">
-        <span class="label">Download Chat </span>
-        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <path d="M3 5l3 3 3-3"/>
-        </svg>
-      </div>
-      <div class="options">
-        <div data-fmt="txt">TXT</div>
-        <div data-fmt="md">MD</div>
-        <div data-fmt="json">JSON</div>
-      </div>
+    // Create the inner wrapper
+    const innerWrapper = document.createElement('div');
+
+    // Create flex container
+    const flexContainer = document.createElement('div');
+    flexContainer.className = 'flex items-center';
+
+    // Create shrink wrapper
+    const shrinkWrapper = document.createElement('div');
+    shrinkWrapper.className = 'flex shrink-0';
+    shrinkWrapper.setAttribute('data-state', 'closed');
+    shrinkWrapper.style.cssText = 'opacity: 1; transform: none;';
+
+    // Create the main button using Claude's exact classes
+    const btn = document.createElement('button');
+    btn.className = 'claude-download-btn inline-flex items-center justify-center relative shrink-0 can-focus select-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:drop-shadow-none border-0.5 transition-all h-8 min-w-8 rounded-lg flex items-center px-[7.5px] group !pointer-events-auto !outline-offset-1 text-text-300 border-border-300 active:scale-[0.98] hover:text-text-200/90 hover:bg-bg-100';
+    btn.type = 'button';
+    btn.setAttribute('aria-pressed', 'false');
+    btn.setAttribute('aria-label', 'Download chat');
+    btn.title = 'Download Chat';
+
+    // Create button content wrapper
+    const btnContentWrapper = document.createElement('div');
+    btnContentWrapper.className = 'flex flex-row items-center justify-center gap-1';
+
+    // Create icon wrapper
+    const iconWrapper = document.createElement('div');
+    iconWrapper.style.cssText = 'transform: none;';
+
+    // Download icon SVG (matching Claude's style)
+    iconWrapper.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+        <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0ZM117.66,138.34a8,8,0,0,0,11.31,0l48-48A8,8,0,0,0,165.66,79L136,108.69V24a8,8,0,0,0-16,0v84.69L90.34,79A8,8,0,0,0,79,90.34Z"/>
+      </svg>
     `;
 
-    const selDiv = dd.querySelector('.selected');
-    selDiv.addEventListener('click', () => {
-      dd.classList.toggle('open');
-      dd.classList.remove('up');
-      const opts = dd.querySelector('.options');
-      opts.style.display = 'flex';
-      const rect = opts.getBoundingClientRect();
-      opts.style.display = '';
-      if (rect.bottom > window.innerHeight) {
-        dd.classList.add('up');
-      }
+    btnContentWrapper.appendChild(iconWrapper);
+    btn.appendChild(btnContentWrapper);
+
+    console.log("Claude Downloader: Button created with native structure");
+
+    // Create dropdown with exact native structure
+    const dropdown = document.createElement('div');
+    dropdown.className = 'claude-download-dropdown';
+
+    // Create the inner structure exactly matching Claude's native dropdown
+    const dropdownInner = document.createElement('div');
+    dropdownInner.className = 'dropdown-inner';
+    dropdownInner.style.maxHeight = '415px';
+
+    const dropdownContent = document.createElement('div');
+    dropdownContent.className = 'dropdown-content';
+    dropdownContent.style.height = 'auto';
+
+    const dropdownWrapper = document.createElement('div');
+    dropdownWrapper.className = 'w-full';
+
+    const paddingWrapper = document.createElement('div');
+    paddingWrapper.className = 'p-1.5 flex flex-col';
+
+    const flexCol = document.createElement('div');
+    flexCol.className = 'flex flex-col';
+    flexCol.style.transform = 'none';
+
+    // Create download options with native structure
+    const formats = [
+      { fmt: 'txt', label: 'Download as TXT', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+      { fmt: 'md', label: 'Download as MD', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+      { fmt: 'json', label: 'Download as JSON', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' }
+    ];
+
+    formats.forEach(format => {
+      const optionDiv = document.createElement('div');
+      optionDiv.className = '';
+
+      const optionButton = document.createElement('button');
+      optionButton.className = 'claude-download-option';
+      optionButton.dataset.fmt = format.fmt;
+
+      // Icon container
+      const iconContainer = document.createElement('div');
+      iconContainer.className = 'option-icon';
+      iconContainer.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="${format.icon}"/>
+        </svg>
+      `;
+
+      // Text container - matching native structure exactly
+      const textContainer = document.createElement('div');
+      textContainer.className = 'option-text';
+
+      const label = document.createElement('p');
+      label.className = 'option-label';
+      label.textContent = format.label;
+
+      textContainer.appendChild(label);
+
+      optionButton.appendChild(iconContainer);
+      optionButton.appendChild(textContainer);
+      optionDiv.appendChild(optionButton);
+      flexCol.appendChild(optionDiv);
     });
 
-    dd.querySelectorAll('.options > div').forEach(opt => {
-      opt.addEventListener('click', () => {
-        const fmt = opt.dataset.fmt;
-        const origLabel = dd.querySelector('.label');
-        origLabel.textContent = `Download ${fmt.toUpperCase()}`;
+    // Assemble the structure
+    paddingWrapper.appendChild(flexCol);
+    dropdownWrapper.appendChild(paddingWrapper);
+    dropdownContent.appendChild(dropdownWrapper);
+    dropdownInner.appendChild(dropdownContent);
+    dropdown.appendChild(dropdownInner);
 
-        // Reset to just "Download" after a brief delay
-        setTimeout(() => {
-          origLabel.textContent = "Download";
-        }, 1500);
+    // Assemble the button structure
+    shrinkWrapper.appendChild(btn);
+    flexContainer.appendChild(shrinkWrapper);
+    innerWrapper.appendChild(flexContainer);
+    btnWrapper.appendChild(innerWrapper);
+    btnWrapper.appendChild(dropdown);
 
-        dd.classList.remove('open', 'up');
+    // Button click handler
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle('show');
+    });
+
+    // Dropdown option handlers
+    dropdown.querySelectorAll('button[data-fmt]').forEach(option => {
+      option.addEventListener('click', () => {
+        const fmt = option.dataset.fmt;
+        dropdown.classList.remove('show');
         download(fmt);
       });
     });
 
-    fs.appendChild(dd);
-
-    // Add click outside to close
+    // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
-      if (!dd.contains(e.target)) {
-        dd.classList.remove('open', 'up');
+      if (!btnWrapper.contains(e.target)) {
+        dropdown.classList.remove('show');
       }
     });
+
+    // Find the research button to insert before it
+    const researchBtn = buttonContainer.querySelector('button:has(svg path[d*="M8.5 2C12.0899"]), div.flex.shrink.min-w-8');
+
+    if (researchBtn) {
+      console.log("Claude Downloader: Inserting before Research button");
+      buttonContainer.insertBefore(btnWrapper, researchBtn);
+    } else {
+      // Try to find any button container to insert into
+      const anyButtonArea = buttonContainer.querySelector('div:last-child');
+      if (anyButtonArea) {
+        console.log("Claude Downloader: Inserting into button area");
+        anyButtonArea.insertBefore(btnWrapper, anyButtonArea.firstChild);
+      } else {
+        console.log("Claude Downloader: Appending to main container");
+        buttonContainer.appendChild(btnWrapper);
+      }
+    }
+
+    console.log("Claude Downloader: Button injected successfully!");
+    console.log("Container:", buttonContainer);
+    console.log("Button element:", btn);
   }
 
   // 4) Observe React re-renders with improved robustness
@@ -284,21 +461,21 @@
           Array.from(m.addedNodes).some(
             n =>
               n.nodeType === 1 &&
-              (n.matches('fieldset') ||
-               n.matches('fieldset.flex.w-full.min-w-0.flex-col') ||
-               n.querySelector('fieldset') ||
-               n.querySelector('fieldset.flex.w-full.min-w-0.flex-col'))
+              (n.matches('div.flex.items-center') ||
+               n.querySelector('div.flex.items-center') ||
+               n.matches('button') ||
+               n.querySelector('button'))
           )
         )
       ) {
-        setTimeout(injectDropdown, 100); // Small delay for Edge
+        setTimeout(injectDownloadButton, 100);
       }
     } catch (e) {
       console.error("Error in mutation observer:", e);
     }
   });
 
-  // Use a more reliable way to start observing
+  // Start observing and initial setup
   function startObserving() {
     try {
       mo.observe(document.documentElement, { childList: true, subtree: true });
@@ -308,14 +485,28 @@
     }
   }
 
-  // Try initial injection, with retry for Edge
   function initialSetup() {
-    injectDropdown();
-    if (!document.querySelector('.claude-format-dropdown')) {
-      console.log("Claude Downloader: Initial injection failed, will retry...");
-      setTimeout(injectDropdown, 1000);
-      setTimeout(injectDropdown, 2000);
+    console.log("Claude Downloader: Starting initial setup...");
+
+    // Wait for page to be fully loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(injectDownloadButton, 500);
+      });
+    } else {
+      injectDownloadButton();
     }
+
+    // Retry attempts with increasing delays
+    const retryDelays = [1000, 2000, 3000, 5000];
+    retryDelays.forEach(delay => {
+      setTimeout(() => {
+        if (!document.querySelector('.claude-download-btn')) {
+          console.log(`Claude Downloader: Retry attempt after ${delay}ms`);
+          injectDownloadButton();
+        }
+      }, delay);
+    });
   }
 
   // Start everything
