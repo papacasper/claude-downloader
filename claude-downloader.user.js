@@ -260,7 +260,7 @@
     console.log("Claude Downloader: Attempting to inject button...");
 
     // Look for the exact container structure from the provided HTML
-    let buttonContainer = document.querySelector('div.relative.flex-1.flex.items-center.gap-2.shrink.min-w-0');
+    let buttonContainer = document.querySelector('div.relative.flex-1.flex.items-center.shrink.min-w-0.gap-1');
 
     if (!buttonContainer) {
       console.log("Claude Downloader: Main container not found, trying fallbacks...");
@@ -430,18 +430,18 @@
       }
     });
 
-    // Find the research button to insert before it
-    const researchBtn = buttonContainer.querySelector('button:has(svg path[d*="M8.5 2C12.0899"]), div.flex.shrink.min-w-8');
+    // Find the empty flex container to insert the button into
+    const flexContainer = buttonContainer.querySelector('div.flex.flex-row.items-center.min-w-0.gap-1');
 
-    if (researchBtn) {
-      console.log("Claude Downloader: Inserting before Research button");
-      buttonContainer.insertBefore(btnWrapper, researchBtn);
+    if (flexContainer) {
+      console.log("Claude Downloader: Inserting into flex container");
+      flexContainer.appendChild(btnWrapper);
     } else {
-      // Try to find any button container to insert into
-      const anyButtonArea = buttonContainer.querySelector('div:last-child');
-      if (anyButtonArea) {
-        console.log("Claude Downloader: Inserting into button area");
-        anyButtonArea.insertBefore(btnWrapper, anyButtonArea.firstChild);
+      // Fallback: insert after the extended thinking button container
+      const extendedThinkingContainer = buttonContainer.querySelector('div.flex.shrink.min-w-8');
+      if (extendedThinkingContainer) {
+        console.log("Claude Downloader: Inserting after extended thinking button");
+        extendedThinkingContainer.parentNode.insertBefore(btnWrapper, extendedThinkingContainer.nextSibling);
       } else {
         console.log("Claude Downloader: Appending to main container");
         buttonContainer.appendChild(btnWrapper);
