@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Claude Chat Downloader (native button style)
 // @namespace    http://tampermonkey.net/
-// @version      2.2.1
+// @version      2.2.2
 // @description  Download Claude conversations with native button styling that matches the plus/settings buttons
 // @author       Papa Casper
 // @homepage     https://papacasper.com
@@ -98,6 +98,7 @@
       transition: all 0.15s ease;
       height: 2rem;
       background: transparent;
+      border: none;
     }
 
     .claude-download-option:hover {
@@ -143,6 +144,13 @@
 
     .claude-download-option:hover .option-label {
       color: var(--text-100, #f2f2f7);
+    }
+
+    /* Ensure button wrapper has relative positioning for dropdown */
+    .claude-download-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
     }
   `;
   document.head.appendChild(ddStyles);
@@ -259,49 +267,52 @@
 
     console.log("Claude Downloader: Attempting to inject button...");
 
-    // Look for the exact container structure from the provided HTML
-    let buttonContainer = document.querySelector('div.relative.flex-1.flex.items-center.shrink.min-w-0.gap-1');
+    // Strategy: Find the input area's button row
+    // Look for the plus button or settings button as anchor points
+    const plusButton = document.querySelector('button[data-testid="input-menu-plus"]');
+    const settingsButton = document.querySelector('button[aria-label="Open settings"]');
+    
+    let insertionPoint = null;
+    let insertionMethod = 'after'; // 'after', 'before', or 'append'
 
-    if (!buttonContainer) {
-      console.log("Claude Downloader: Main container not found, trying fallbacks...");
-      // Fallback selectors
-      const fallbackSelectors = [
+    if (plusButton) {
+      // Insert near the plus button
+      insertionPoint = plusButton.closest('div.relative.shrink-0') || plusButton.parentElement;
+      console.log("Claude Downloader: Found plus button as anchor");
+    } else if (settingsButton) {
+      // Insert near settings button
+      insertionPoint = settingsButton.closest('div.relative.shrink-0') || settingsButton.parentElement;
+      insertionMethod = 'before';
+      console.log("Claude Downloader: Found settings button as anchor");
+    }
+
+    // Fallback: look for the button container area
+    if (!insertionPoint) {
+      const containerSelectors = [
+        'div.relative.flex-1.flex.items-center.shrink.min-w-0.gap-1',
         'div.flex.items-center.gap-2',
-        'div[class*="flex"][class*="items-center"][class*="gap-2"]',
-        'div.relative.flex-1.flex',
-        'div:has(button[data-testid="input-menu-plus"])'
+        'div[class*="flex"][class*="items-center"][class*="gap"]'
       ];
 
-      for (const selector of fallbackSelectors) {
-        buttonContainer = document.querySelector(selector);
-        if (buttonContainer) {
-          console.log(`Claude Downloader: Found fallback container: ${selector}`);
+      for (const selector of containerSelectors) {
+        const container = document.querySelector(selector);
+        if (container) {
+          insertionPoint = container;
+          insertionMethod = 'append';
+          console.log(`Claude Downloader: Found container via selector: ${selector}`);
           break;
         }
       }
-
-      if (!buttonContainer) {
-        console.log("Claude Downloader: No suitable container found");
-        return;
-      }
     }
 
-    // Create button wrapper that matches Claude's structure
+    if (!insertionPoint) {
+      console.log("Claude Downloader: No suitable insertion point found");
+      return;
+    }
+
+    // Create button wrapper
     const btnWrapper = document.createElement('div');
-    btnWrapper.className = 'relative shrink-0';
-
-    // Create the inner wrapper
-    const innerWrapper = document.createElement('div');
-
-    // Create flex container
-    const flexContainer = document.createElement('div');
-    flexContainer.className = 'flex items-center';
-
-    // Create shrink wrapper
-    const shrinkWrapper = document.createElement('div');
-    shrinkWrapper.className = 'flex shrink-0';
-    shrinkWrapper.setAttribute('data-state', 'closed');
-    shrinkWrapper.style.cssText = 'opacity: 1; transform: none;';
+    btnWrapper.className = 'claude-download-wrapper relative shrink-0';
 
     // Create the main button using Claude's exact classes
     const btn = document.createElement('button');
@@ -329,13 +340,10 @@
     btnContentWrapper.appendChild(iconWrapper);
     btn.appendChild(btnContentWrapper);
 
-    console.log("Claude Downloader: Button created with native structure");
-
-    // Create dropdown with exact native structure
+    // Create dropdown
     const dropdown = document.createElement('div');
     dropdown.className = 'claude-download-dropdown';
 
-    // Create the inner structure exactly matching Claude's native dropdown
     const dropdownInner = document.createElement('div');
     dropdownInner.className = 'dropdown-inner';
     dropdownInner.style.maxHeight = '415px';
@@ -350,11 +358,11 @@
     const paddingWrapper = document.createElement('div');
     paddingWrapper.className = 'p-1.5 flex flex-col';
 
-    const flexCol = document.createElement('div');
-    flexCol.className = 'flex flex-col';
-    flexCol.style.transform = 'none';
+    const optionsContainer = document.createElement('div');
+    optionsContainer.className = 'flex flex-col';
+    optionsContainer.style.transform = 'none';
 
-    // Create download options with native structure
+    // Create download options
     const formats = [
       { fmt: 'txt', label: 'Download as TXT', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
       { fmt: 'md', label: 'Download as MD', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
@@ -363,13 +371,11 @@
 
     formats.forEach(format => {
       const optionDiv = document.createElement('div');
-      optionDiv.className = '';
 
       const optionButton = document.createElement('button');
       optionButton.className = 'claude-download-option';
       optionButton.dataset.fmt = format.fmt;
 
-      // Icon container
       const iconContainer = document.createElement('div');
       iconContainer.className = 'option-icon';
       iconContainer.innerHTML = `
@@ -378,7 +384,6 @@
         </svg>
       `;
 
-      // Text container - matching native structure exactly
       const textContainer = document.createElement('div');
       textContainer.className = 'option-text';
 
@@ -387,25 +392,21 @@
       label.textContent = format.label;
 
       textContainer.appendChild(label);
-
       optionButton.appendChild(iconContainer);
       optionButton.appendChild(textContainer);
       optionDiv.appendChild(optionButton);
-      flexCol.appendChild(optionDiv);
+      optionsContainer.appendChild(optionDiv);
     });
 
-    // Assemble the structure
-    paddingWrapper.appendChild(flexCol);
+    // Assemble dropdown structure
+    paddingWrapper.appendChild(optionsContainer);
     dropdownWrapper.appendChild(paddingWrapper);
     dropdownContent.appendChild(dropdownWrapper);
     dropdownInner.appendChild(dropdownContent);
     dropdown.appendChild(dropdownInner);
 
-    // Assemble the button structure
-    shrinkWrapper.appendChild(btn);
-    flexContainer.appendChild(shrinkWrapper);
-    innerWrapper.appendChild(flexContainer);
-    btnWrapper.appendChild(innerWrapper);
+    // Assemble button wrapper
+    btnWrapper.appendChild(btn);
     btnWrapper.appendChild(dropdown);
 
     // Button click handler
@@ -430,27 +431,26 @@
       }
     });
 
-    // Find the empty flex container to insert the button into
-    const flexContainer = buttonContainer.querySelector('div.flex.flex-row.items-center.min-w-0.gap-1');
-
-    if (flexContainer) {
-      console.log("Claude Downloader: Inserting into flex container");
-      flexContainer.appendChild(btnWrapper);
-    } else {
-      // Fallback: insert after the extended thinking button container
-      const extendedThinkingContainer = buttonContainer.querySelector('div.flex.shrink.min-w-8');
-      if (extendedThinkingContainer) {
-        console.log("Claude Downloader: Inserting after extended thinking button");
-        extendedThinkingContainer.parentNode.insertBefore(btnWrapper, extendedThinkingContainer.nextSibling);
+    // Insert the button based on the method
+    try {
+      if (insertionMethod === 'after' && insertionPoint.parentNode) {
+        insertionPoint.parentNode.insertBefore(btnWrapper, insertionPoint.nextSibling);
+      } else if (insertionMethod === 'before' && insertionPoint.parentNode) {
+        insertionPoint.parentNode.insertBefore(btnWrapper, insertionPoint);
       } else {
-        console.log("Claude Downloader: Appending to main container");
-        buttonContainer.appendChild(btnWrapper);
+        insertionPoint.appendChild(btnWrapper);
+      }
+      console.log("Claude Downloader: Button injected successfully!");
+    } catch (e) {
+      console.error("Claude Downloader: Failed to insert button:", e);
+      // Last resort: append to the insertion point
+      try {
+        insertionPoint.appendChild(btnWrapper);
+        console.log("Claude Downloader: Button appended as fallback");
+      } catch (e2) {
+        console.error("Claude Downloader: All insertion methods failed:", e2);
       }
     }
-
-    console.log("Claude Downloader: Button injected successfully!");
-    console.log("Container:", buttonContainer);
-    console.log("Button element:", btn);
   }
 
   // 4) Observe React re-renders with improved robustness
@@ -461,10 +461,10 @@
           Array.from(m.addedNodes).some(
             n =>
               n.nodeType === 1 &&
-              (n.matches('div.flex.items-center') ||
-               n.querySelector('div.flex.items-center') ||
-               n.matches('button') ||
-               n.querySelector('button'))
+              (n.matches?.('div.flex.items-center') ||
+               n.querySelector?.('div.flex.items-center') ||
+               n.matches?.('button') ||
+               n.querySelector?.('button'))
           )
         )
       ) {
