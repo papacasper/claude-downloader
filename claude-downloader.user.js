@@ -431,11 +431,11 @@
     });
 
     // Find the empty flex container to insert the button into
-    const flexContainer = buttonContainer.querySelector('div.flex.flex-row.items-center.min-w-0.gap-1');
+    const targetContainer = buttonContainer.querySelector('div.flex.flex-row.items-center.min-w-0.gap-1');
 
-    if (flexContainer) {
-      console.log("Claude Downloader: Inserting into flex container");
-      flexContainer.appendChild(btnWrapper);
+    if (targetContainer) {
+      console.log("Claude Downloader: Inserting into target flex container");
+      targetContainer.appendChild(btnWrapper);
     } else {
       // Fallback: insert after the extended thinking button container
       const extendedThinkingContainer = buttonContainer.querySelector('div.flex.shrink.min-w-8');
