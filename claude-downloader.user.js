@@ -192,6 +192,21 @@
   async function getOrgId() {
     try {
       const orgs = await apiRequest('GET', '/organizations');
+      // Try to match org from the page context (cookie or URL)
+      if (orgs.length === 1) return orgs[0].uuid;
+      // Prefer the active org - check for lastActiveOrg in localStorage
+      try {
+        const stored = localStorage.getItem('lastActiveOrg');
+        if (stored && orgs.some(o => o.uuid === stored)) return stored;
+      } catch (e) {}
+      // Fallback: try each org until one has the conversation
+      const convId = location.pathname.split('/').pop();
+      for (const org of orgs) {
+        try {
+          await apiRequest('GET', `/organizations/${org.uuid}/chat_conversations/${convId}`);
+          return org.uuid;
+        } catch (e) { continue; }
+      }
       return orgs[0].uuid;
     } catch (e) {
       console.error("Failed to get organization ID:", e);
@@ -271,7 +286,7 @@
     // Look for the plus button or settings button as anchor points
     const plusButton = document.querySelector('button[data-testid="input-menu-plus"]');
     const settingsButton = document.querySelector('button[aria-label="Open settings"]');
-    
+
     let insertionPoint = null;
     let insertionMethod = 'after'; // 'after', 'before', or 'append'
 
