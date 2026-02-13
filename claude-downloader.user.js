@@ -194,11 +194,9 @@
       const orgs = await apiRequest('GET', '/organizations');
       // Try to match org from the page context (cookie or URL)
       if (orgs.length === 1) return orgs[0].uuid;
-      // Prefer the active org - check for lastActiveOrg in localStorage
-      try {
-        const stored = localStorage.getItem('lastActiveOrg');
-        if (stored && orgs.some(o => o.uuid === stored)) return stored;
-      } catch (e) {}
+      // Prefer the active org - check for lastActiveOrg cookie
+      const stored = document.cookie.match(/lastActiveOrg=([^;]+)/)?.[1];
+      if (stored && orgs.some(o => o.uuid === stored)) return stored;
       // Fallback: try each org until one has the conversation
       const convId = location.pathname.split('/').pop();
       for (const org of orgs) {
