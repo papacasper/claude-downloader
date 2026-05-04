@@ -5,9 +5,9 @@
 // @description  Add download button to save Claude AI conversations in TXT, MD, or JSON format
 // @author       Papa Casper (updated by Claude)
 // @homepage     https://papacasper.com
-// @repository   https://github.com/PapaCasper
-// @source       https://github.com/PapaCasper/claude-downloader
-// @supportURL   https://github.com/PapaCasper/claude-downloader/issues
+// @homepageURL  https://github.com/papacasper/claude-downloader
+// @updateURL    https://raw.githubusercontent.com/PapaCasper/claude-downloader/main/claude-downloader.user.js
+// @downloadURL  https://raw.githubusercontent.com/PapaCasper/claude-downloader/main/claude-downloader.user.js
 // @match        https://claude.ai/chat/*
 // @match        https://claude.ai/chats/*
 // @match        https://claude.ai/project/*
