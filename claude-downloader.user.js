@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Claude Chat Downloader
 // @namespace    http://tampermonkey.net/
-// @version      2.7
+// @version      2.8
 // @description  Add download button to save Claude AI conversations in TXT, MD, or JSON format
 // @author       Papa Casper (updated by Claude)
 // @homepage     https://papacasper.com
@@ -140,8 +140,35 @@
         });
     }
 
+    // -------------------------------------------------------------------------
+    // Org resolution
+    //
+    // Accounts with multiple orgs may have the conversation under an org that
+    // isn't organizations[0] — that broke exports for those accounts. Prefer
+    // the org recorded in the lastActiveOrg cookie, then fall back to probing
+    // each org for the conversation, only defaulting to organizations[0] if
+    // neither approach resolves anything.
+    // -------------------------------------------------------------------------
     async function getOrganizationId() {
         const organizations = await apiRequest('GET', '/organizations');
+        if (organizations.length === 1) return organizations[0].uuid;
+
+        const stored = document.cookie.match(/lastActiveOrg=([^;]+)/)?.[1];
+        if (stored && organizations.some((org) => org.uuid === stored)) return stored;
+
+        const isProject = window.location.pathname.includes('/project/');
+        const id = location.pathname.split('/').pop();
+        for (const org of organizations) {
+            try {
+                const endpoint = isProject
+                    ? `/organizations/${org.uuid}/projects/${id}`
+                    : `/organizations/${org.uuid}/chat_conversations/${id}`;
+                await apiRequest('GET', endpoint);
+                return org.uuid;
+            } catch (e) {
+                continue;
+            }
+        }
         return organizations[0].uuid;
     }
 
