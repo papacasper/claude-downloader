@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Claude Chat Downloader
 // @namespace    http://tampermonkey.net/
-// @version      2.8
+// @version      2.9
 // @description  Add download button to save Claude AI conversations in TXT, MD, or JSON format
 // @author       Papa Casper (updated by Claude)
 // @homepage     https://papacasper.com
@@ -24,7 +24,7 @@
     const CONVERSATION_PARAMS = 'tree=True&rendering_mode=messages&render_all_tools=true&consistency=eventual';
 
     const styles = `
-        .claude-download-container {
+        .cdx-export-container {
             display: flex;
             flex-direction: row;
             gap: 0.5rem;
@@ -33,7 +33,7 @@
             background-color: var(--bg-100);
             border-bottom: 0.5px solid var(--border-300);
         }
-        .claude-download-button {
+        .cdx-export-button {
             display: flex;
             padding: 0.4rem 0.75rem;
             border-radius: 0.5rem;
@@ -48,17 +48,17 @@
             flex: 1;
             min-width: 85px;
         }
-        .claude-download-button:hover {
+        .cdx-export-button:hover {
             background-color: var(--bg-500, rgba(39, 39, 42, 0.4));
             color: var(--text-100);
             border-color: var(--text-200);
             transform: translateY(-1px);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        .claude-download-button:active {
+        .cdx-export-button:active {
             transform: translateY(0);
         }
-        .claude-download-button svg {
+        .cdx-export-button svg {
             width: 1.25rem;
             height: 1.25rem;
             margin-left: 0.5rem;
@@ -83,7 +83,7 @@
     // Returns true if injection succeeded, false if the DOM isn't ready yet.
     // -------------------------------------------------------------------------
     function tryInject() {
-        if (document.querySelector('.claude-download-container')) return true;
+        if (document.querySelector('.cdx-export-container')) return true;
 
         const header = document.querySelector('header[data-testid="page-header"]');
         if (!header) return false;
@@ -278,7 +278,7 @@
     // -------------------------------------------------------------------------
     function buildButtonsContainer() {
         const container = document.createElement('div');
-        container.className = 'claude-download-container';
+        container.className = 'cdx-export-container';
 
         const formats = [
             { id: 'txt',  label: 'TXT',  title: 'Download as plain text file' },
@@ -288,7 +288,7 @@
 
         formats.forEach(format => {
             const btn = document.createElement('button');
-            btn.className = 'claude-download-button';
+            btn.className = 'cdx-export-button';
             btn.title = format.title;
             btn.innerHTML = `
                 <span>${format.label}</span>
@@ -307,7 +307,7 @@
     // Remove bar when leaving a conversation page
     // -------------------------------------------------------------------------
     function removeDownloadButton() {
-        document.querySelector('.claude-download-container')?.remove();
+        document.querySelector('.cdx-export-container')?.remove();
     }
 
     function isConversationPage() {
